@@ -1,27 +1,24 @@
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from django.core.paginator import Paginator
 from .models import News
+
+PAGE_SIZE = 12
 
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def list_news(request):
-    """
-    Get list of news articles with optional filtering by category and search
-    """
-    # Get query parameters
     category = request.GET.get('category', '').strip()
     search_query = request.GET.get('search', '').strip()
+    page = max(1, int(request.GET.get('page', 1) or 1))
 
-    # Start with all news
-    news_query = News.objects.filter().order_by('-is_featured', '-published_at')
+    news_query = News.objects.order_by('-is_featured', '-published_at')
 
-    # Apply category filter
     if category:
         news_query = news_query.filter(category=category)
 
-    # Apply search filter
     if search_query:
         news_query = news_query.filter(
             title__icontains=search_query
@@ -31,10 +28,14 @@ def list_news(request):
             content__icontains=search_query
         )
 
-    # Serialize news articles
+    paginator = Paginator(news_query, PAGE_SIZE)
+    total = paginator.count
+    total_pages = paginator.num_pages
+    page = min(page, total_pages) if total_pages else 1
+    page_obj = paginator.get_page(page)
+
     news_list = []
-    for article in news_query:
-        # Prefer plain image_url (set by FMP sync), fall back to Cloudinary upload
+    for article in page_obj:
         image_url = article.image_url or None
         if not image_url and article.image:
             image_url = article.image.url
@@ -55,7 +56,13 @@ def list_news(request):
             "updated_at": article.updated_at.isoformat(),
         })
 
-    return Response(news_list)
+    return Response({
+        "results": news_list,
+        "total": total,
+        "page": page,
+        "pages": total_pages,
+        "page_size": PAGE_SIZE,
+    })
 
 
 @api_view(["GET"])

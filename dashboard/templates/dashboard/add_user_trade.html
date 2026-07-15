@@ -35,14 +35,10 @@
                 <i class="fas fa-chart-bar text-indigo-500"></i> Trade Details
             </h4>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                <div>
+                <div class="sm:col-span-2">
                     <label class="block text-sm font-medium text-gray-600 mb-1">{{ form.market.label }}</label>
                     {{ form.market }}
                     {% if form.market.errors %}<p class="text-xs text-red-600 mt-1">{{ form.market.errors.0 }}</p>{% endif %}
-                    <a href="{% url 'dashboard:stock_create' %}" target="_blank"
-                        class="inline-flex items-center gap-1 mt-1.5 text-xs text-indigo-600 hover:text-indigo-800 font-medium">
-                        <i class="fas fa-plus-circle"></i>Add new stock
-                    </a>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-600 mb-1">{{ form.direction.label }}</label>
@@ -71,12 +67,6 @@
                 P/L is calculated as: <em>balance × P/L %</em>.
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                <div class="sm:col-span-2">
-                    <label class="block text-sm font-medium text-gray-600 mb-1">{{ form.custom_image.label }}</label>
-                    {{ form.custom_image }}
-                    <p class="text-xs text-gray-400 mt-1">{{ form.custom_image.help_text }}</p>
-                    {% if form.custom_image.errors %}<p class="text-xs text-red-600 mt-1">{{ form.custom_image.errors.0 }}</p>{% endif %}
-                </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-600 mb-1">{{ form.entry_price.label }}</label>
                     <div class="flex gap-2">
@@ -128,25 +118,15 @@
 
 <script>
 (function () {
-    const marketSelect  = document.getElementById('id_market');
-    const entryInput    = document.getElementById('id_entry_price');
-    const fetchBtn      = document.getElementById('fmp-fetch-btn');
-    const priceHint     = document.getElementById('fmp-price-hint');
-
-    if (!marketSelect || !fetchBtn) return;
+    var entryInput = document.getElementById('id_entry_price');
+    var fetchBtn   = document.getElementById('fmp-fetch-btn');
+    var priceHint  = document.getElementById('fmp-price-hint');
+    if (!fetchBtn) return;
 
     fetchBtn.addEventListener('click', function () {
-        const option = marketSelect.options[marketSelect.selectedIndex];
-        if (!option || !option.value) {
-            priceHint.textContent = 'Please select a market first.';
-            priceHint.classList.remove('hidden');
-            priceHint.style.color = '#dc2626';
-            return;
-        }
-        // option.value is the stock symbol (e.g. "AAPL")
-        const symbol = option.value.trim().toUpperCase();
+        var symbol = (document.getElementById('id_market').value || '').trim().toUpperCase();
         if (!symbol) {
-            priceHint.textContent = 'Could not determine symbol for this market.';
+            priceHint.textContent = 'Please select a market first.';
             priceHint.classList.remove('hidden');
             priceHint.style.color = '#dc2626';
             return;

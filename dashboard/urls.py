@@ -62,6 +62,10 @@ urlpatterns = [
     path('user-trades/<int:user_id>/trade/<int:trade_id>/edit/', views.edit_user_trade, name='edit_user_trade'),
     path('user-trades/bulk-add/', views.bulk_add_user_trade, name='bulk_add_user_trade'),
 
+    # FMP
+    path('api/fmp-search/', views.fmp_symbol_search, name='fmp_symbol_search'),
+    path('api/fmp-quote/', views.fmp_quote, name='fmp_quote'),
+
     # Stocks / Custom Assets
     path('stocks/', views.stocks_list, name='stocks_list'),
     path('stocks/add/', views.stock_create, name='stock_create'),

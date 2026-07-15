@@ -34,9 +34,9 @@ def list_news(request):
     # Serialize news articles
     news_list = []
     for article in news_query:
-        # Get image URL from Cloudinary field
-        image_url = None
-        if article.image:
+        # Prefer plain image_url (set by FMP sync), fall back to Cloudinary upload
+        image_url = article.image_url or None
+        if not image_url and article.image:
             image_url = article.image.url
 
         news_list.append({
@@ -72,9 +72,9 @@ def news_detail(request, news_id):
             "error": "News article not found"
         }, status=404)
 
-    # Get image URL from Cloudinary field
-    image_url = None
-    if article.image:
+    # Prefer plain image_url (set by FMP sync), fall back to Cloudinary upload
+    image_url = article.image_url or None
+    if not image_url and article.image:
         image_url = article.image.url
 
     return Response({

@@ -88,7 +88,14 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-600 mb-1">{{ form.entry_price.label }}</label>
-                    {{ form.entry_price }}
+                    <div class="flex gap-2">
+                        {{ form.entry_price }}
+                        <button type="button" id="fmp-fetch-btn"
+                            class="px-3 py-2 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg text-xs font-semibold hover:bg-emerald-100 transition whitespace-nowrap">
+                            <i class="fas fa-bolt mr-1"></i>Live Price
+                        </button>
+                    </div>
+                    <p id="fmp-price-hint" class="text-xs text-emerald-600 mt-1 hidden"></p>
                     {% if form.entry_price.errors %}<p class="text-xs text-red-600 mt-1">{{ form.entry_price.errors.0 }}</p>{% endif %}
                 </div>
                 <div>
@@ -128,4 +135,57 @@
         </form>
     </div>
 </div>
+
+<script>
+(function () {
+    const marketSelect  = document.getElementById('id_market');
+    const entryInput    = document.getElementById('id_entry_price');
+    const fetchBtn      = document.getElementById('fmp-fetch-btn');
+    const priceHint     = document.getElementById('fmp-price-hint');
+
+    if (!marketSelect || !fetchBtn) return;
+
+    fetchBtn.addEventListener('click', function () {
+        const option = marketSelect.options[marketSelect.selectedIndex];
+        if (!option || !option.value) {
+            priceHint.textContent = 'Please select a market first.';
+            priceHint.classList.remove('hidden');
+            priceHint.style.color = '#dc2626';
+            return;
+        }
+        // option.value is the stock symbol (e.g. "AAPL")
+        const symbol = option.value.trim().toUpperCase();
+        if (!symbol) {
+            priceHint.textContent = 'Could not determine symbol for this market.';
+            priceHint.classList.remove('hidden');
+            priceHint.style.color = '#dc2626';
+            return;
+        }
+        fetchBtn.disabled = true;
+        fetchBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Fetching…';
+        fetch('/dashboard/api/fmp-quote/?symbol=' + encodeURIComponent(symbol))
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data && data.price != null) {
+                    entryInput.value = parseFloat(data.price).toFixed(2);
+                    priceHint.textContent = '✓ Live price for ' + symbol + ': $' + parseFloat(data.price).toFixed(2);
+                    priceHint.style.color = '#059669';
+                } else {
+                    priceHint.textContent = 'Price not available for ' + symbol + ' — enter manually.';
+                    priceHint.style.color = '#dc2626';
+                }
+                priceHint.classList.remove('hidden');
+            })
+            .catch(function () {
+                priceHint.textContent = 'FMP request failed — enter price manually.';
+                priceHint.style.color = '#dc2626';
+                priceHint.classList.remove('hidden');
+            })
+            .finally(function () {
+                fetchBtn.disabled = false;
+                fetchBtn.innerHTML = '<i class="fas fa-bolt mr-1"></i>Live Price';
+            });
+    });
+})();
+</script>
 {% endblock %}

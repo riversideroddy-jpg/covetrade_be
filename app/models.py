@@ -1376,6 +1376,11 @@ class News(models.Model):
         null=True,
         help_text="Upload news article image or company logo"
     )
+    image_url = models.URLField(
+        blank=True,
+        default='',
+        help_text="External image URL (auto-filled from FMP news feed)"
+    )
     tags = models.JSONField(
         default=list,
         blank=True,
@@ -1476,79 +1481,17 @@ class Notification(models.Model):
 # ADD THIS TO YOUR EXISTING models.py FILE AT THE END
 
 class Stock(models.Model):
-    """Model for stock data"""
-    
-    # Popular stock symbols that work with TradingView
-    SYMBOL_CHOICES = [
-        # Tech Giants
-        ("AAPL", "Apple Inc. (AAPL)"),
-        ("MSFT", "Microsoft Corporation (MSFT)"),
-        ("GOOGL", "Alphabet Inc. (GOOGL)"),
-        ("GOOG", "Alphabet Inc. Class C (GOOG)"),
-        ("AMZN", "Amazon.com Inc. (AMZN)"),
-        ("META", "Meta Platforms Inc. (META)"),
-        ("TSLA", "Tesla Inc. (TSLA)"),
-        ("NVDA", "NVIDIA Corporation (NVDA)"),
-        ("AMD", "Advanced Micro Devices (AMD)"),
-        ("INTC", "Intel Corporation (INTC)"),
-        
-        # Streaming & Entertainment
-        ("NFLX", "Netflix Inc. (NFLX)"),
-        ("DIS", "Walt Disney Company (DIS)"),
-        ("SPOT", "Spotify Technology (SPOT)"),
-        ("ROKU", "Roku Inc. (ROKU)"),
-        
-        # Financial & Fintech
-        ("V", "Visa Inc. (V)"),
-        ("MA", "Mastercard Inc. (MA)"),
-        ("PYPL", "PayPal Holdings (PYPL)"),
-        ("SQ", "Block Inc. (SQ)"),
-        ("COIN", "Coinbase Global (COIN)"),
-        ("SOFI", "SoFi Technologies (SOFI)"),
-        ("AFRM", "Affirm Holdings (AFRM)"),
-        
-        # Crypto Mining & Blockchain
-        ("MARA", "Marathon Digital Holdings (MARA)"),
-        ("RIOT", "Riot Platforms Inc. (RIOT)"),
-        ("CLSK", "CleanSpark Inc. (CLSK)"),
-        ("MSTR", "MicroStrategy Inc. (MSTR)"),
-        
-        # E-commerce & Travel
-        ("SHOP", "Shopify Inc. (SHOP)"),
-        ("ABNB", "Airbnb Inc. (ABNB)"),
-        ("UBER", "Uber Technologies (UBER)"),
-        ("DASH", "DoorDash Inc. (DASH)"),
-        
-        # Semiconductors
-        ("AVGO", "Broadcom Inc. (AVGO)"),
-        ("QCOM", "QUALCOMM Inc. (QCOM)"),
-        ("MU", "Micron Technology (MU)"),
-        ("ASML", "ASML Holding (ASML)"),
-        
-        # Software & Cloud
-        ("CRM", "Salesforce Inc. (CRM)"),
-        ("ORCL", "Oracle Corporation (ORCL)"),
-        ("ADBE", "Adobe Inc. (ADBE)"),
-        ("NOW", "ServiceNow Inc. (NOW)"),
-        ("SNOW", "Snowflake Inc. (SNOW)"),
-        ("CRWD", "CrowdStrike Holdings (CRWD)"),
-        ("ZS", "Zscaler Inc. (ZS)"),
-        
-        # Energy & Clean Energy
-        ("ENPH", "Enphase Energy (ENPH)"),
-        ("SEDG", "SolarEdge Technologies (SEDG)"),
-        ("RUN", "Sunrun Inc. (RUN)"),
-        
-        # Other Tech
-        ("SNAP", "Snap Inc. (SNAP)"),
-        ("PINS", "Pinterest Inc. (PINS)"),
-        ("TWLO", "Twilio Inc. (TWLO)"),
-        ("BMR", "Beamr Imaging Ltd. (BMR)"),
-        ("ZM", "Zoom Video Communications (ZM)"),
-        ("DOCU", "DocuSign Inc. (DOCU)"),
+    """Model for stock/asset data"""
+
+    CATEGORY_CHOICES = [
+        ('stock',   'Stock'),
+        ('crypto',  'Crypto'),
+        ('etf',     'ETF'),
+        ('indices', 'Indices'),
+        ('forex',   'Forex'),
     ]
-    
-    symbol = models.CharField(max_length=10, choices=SYMBOL_CHOICES, unique=True)
+
+    symbol = models.CharField(max_length=20, unique=True)
     name = models.CharField(max_length=200)
     logo_url = models.URLField(max_length=500, blank=True, null=True)
     image = CloudinaryField(
@@ -1558,6 +1501,7 @@ class Stock(models.Model):
         null=True,
         help_text="Upload the stock logo/image",
     )
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='stock')
     price = models.DecimalField(max_digits=12, decimal_places=2)
     change = models.DecimalField(max_digits=12, decimal_places=2)
     change_percent = models.DecimalField(max_digits=8, decimal_places=2)

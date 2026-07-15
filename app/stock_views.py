@@ -10,56 +10,91 @@ from .models import Stock, UserStockPosition, TradeHistory, Notification
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def list_stocks(request):
-    """
-    List all stocks with optional featured filter
-    """
+    category = request.GET.get('category', 'all').lower()
     featured = request.GET.get('featured', '').lower() == 'true'
 
+    qs = Stock.objects.filter(is_active=True)
     if featured:
-        stocks = Stock.objects.filter(is_active=True, is_featured=True).order_by('symbol')
-    else:
-        stocks = Stock.objects.filter(is_active=True).order_by('-is_featured', 'symbol')
+        qs = qs.filter(is_featured=True)
+    if category != 'all':
+        qs = qs.filter(category=category)
+    qs = qs.order_by('-is_featured', 'symbol')
 
-    stocks_list = []
-    for stock in stocks:
-        stocks_list.append({
+    stocks_list = [
+        {
             "id": stock.id,
             "symbol": stock.symbol,
             "name": stock.name,
             "logo_url": stock.logo_url,
+            "category": stock.category,
             "price": str(stock.price),
             "change": str(stock.change),
             "change_percent": str(stock.change_percent),
             "is_positive_change": stock.is_positive_change,
             "is_featured": stock.is_featured,
-        })
+        }
+        for stock in qs
+    ]
 
-    return Response({
-        "success": True,
-        "stocks": stocks_list,
-    })
+    return Response({"success": True, "stocks": stocks_list})
 
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def stock_detail(request, symbol):
-    """
-    Get stock details and user's position if they own it
-    """
+    from app.fmp_client import fmp_get, get_profile
+
+    symbol = symbol.upper()
     user = request.user
 
+    # Fetch live quote from FMP
     try:
-        stock = Stock.objects.get(symbol=symbol.upper(), is_active=True)
-    except Stock.DoesNotExist:
-        return Response({
-            "success": False,
-            "error": "Stock not found"
-        }, status=status.HTTP_404_NOT_FOUND)
+        quotes = fmp_get("/quote", {"symbol": symbol})
+        if not isinstance(quotes, list) or not quotes:
+            return Response({"success": False, "error": "Symbol not found"}, status=status.HTTP_404_NOT_FOUND)
+        q = quotes[0]
+    except Exception:
+        return Response({"success": False, "error": "Unable to fetch market data"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
-    # Get user's position if exists
+    # Fetch company profile (sector, description, CEO, website, etc.)
+    profile = get_profile(symbol)
+
+    price      = float(q.get("price") or 0)
+    change     = float(q.get("change") or 0)
+    change_pct = float(q.get("changePercentage") or q.get("changesPercentage") or 0)
+
+    stock_data = {
+        "symbol":           symbol,
+        "name":             q.get("name") or profile.get("companyName") or symbol,
+        "logo_url":         f"https://images.financialmodelingprep.com/symbol/{symbol}.png",
+        "price":            f"{price:.2f}",
+        "change":           f"{change:.2f}",
+        "change_percent":   f"{change_pct:.2f}",
+        "is_positive_change": change_pct >= 0,
+        "open":             float(q.get("open") or 0),
+        "previous_close":   float(q.get("previousClose") or 0),
+        "day_high":         float(q.get("dayHigh") or 0),
+        "day_low":          float(q.get("dayLow") or 0),
+        "year_high":        float(q.get("yearHigh") or 0),
+        "year_low":         float(q.get("yearLow") or 0),
+        "market_cap":       q.get("marketCap") or profile.get("mktCap"),
+        "volume":           q.get("volume"),
+        "avg_volume":       q.get("avgVolume"),
+        "eps":              q.get("eps"),
+        "pe":               q.get("pe"),
+        "exchange":         q.get("exchange") or profile.get("exchangeShortName"),
+        "sector":           profile.get("sector"),
+        "industry":         profile.get("industry"),
+        "description":      profile.get("description"),
+        "website":          profile.get("website"),
+        "ceo":              profile.get("ceo"),
+    }
+
+    # User position if they own this stock
     user_position = None
     try:
-        position = UserStockPosition.objects.get(user=user, stock=stock, is_active=True)
+        db_stock = Stock.objects.get(symbol=symbol, is_active=True)
+        position = UserStockPosition.objects.get(user=user, stock=db_stock, is_active=True)
         user_position = {
             "id": position.id,
             "shares": str(position.shares),
@@ -69,27 +104,10 @@ def stock_detail(request, symbol):
             "profit_loss": str(position.profit_loss),
             "profit_loss_percent": str(position.profit_loss_percent),
         }
-    except UserStockPosition.DoesNotExist:
+    except (Stock.DoesNotExist, UserStockPosition.DoesNotExist):
         pass
 
-    return Response({
-        "success": True,
-        "stock": {
-            "id": stock.id,
-            "symbol": stock.symbol,
-            "name": stock.name,
-            "logo_url": stock.logo_url,
-            "price": str(stock.price),
-            "change": str(stock.change),
-            "change_percent": str(stock.change_percent),
-            "volume": stock.volume,
-            "market_cap": stock.market_cap,
-            "formatted_market_cap": stock.formatted_market_cap,
-            "sector": stock.sector,
-            "is_positive_change": stock.is_positive_change,
-        },
-        "user_position": user_position,
-    })
+    return Response({"success": True, "stock": stock_data, "user_position": user_position})
 
 
 @api_view(["POST"])

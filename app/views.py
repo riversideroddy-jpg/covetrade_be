@@ -16,6 +16,41 @@ from .email_service import send_admin_payment_intent_notification
 
 
 # ============================================================
+# SYNC TRIGGER (called by cron-job.com)
+# ============================================================
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def sync_trigger(request, sync_type):
+    """
+    Called by cron-job.com to run scheduled management commands.
+    Protected by X-Sync-Secret header matching SYNC_SECRET env var.
+    sync_type: 'prices' | 'rates' | 'news'
+    """
+    from decouple import config
+    from django.core.management import call_command
+
+    secret = config("SYNC_SECRET", default="")
+    if not secret or request.headers.get("X-Sync-Secret") != secret:
+        return Response({"success": False, "error": "Unauthorized"}, status=401)
+
+    ALLOWED = {
+        "prices": "sync_stock_prices",
+        "rates":  "sync_crypto_rates",
+        "news":   "fetch_fmp_news",
+    }
+    cmd = ALLOWED.get(sync_type)
+    if not cmd:
+        return Response({"success": False, "error": "Unknown sync type"}, status=400)
+
+    try:
+        call_command(cmd)
+        return Response({"success": True, "synced": sync_type})
+    except Exception as exc:
+        return Response({"success": False, "error": str(exc)}, status=500)
+
+
+# ============================================================
 # DEPOSIT VIEWS
 # ============================================================
 

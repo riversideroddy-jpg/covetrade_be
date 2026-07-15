@@ -25,6 +25,34 @@ from .decorators import admin_required
 
 
 # ---------------------------------------------------------------------------
+# FMP utilities
+# ---------------------------------------------------------------------------
+
+def fmp_symbol_search(request):
+    from app import fmp_client
+    q = request.GET.get("q", "").strip()
+    if len(q) < 1:
+        return JsonResponse([], safe=False)
+    results = fmp_client.search_symbols(q, limit=15)
+    return JsonResponse(results, safe=False)
+
+
+def fmp_quote(request):
+    from app import fmp_client
+    symbol = request.GET.get("symbol", "").strip().upper()
+    if not symbol:
+        return JsonResponse({"error": "symbol required"}, status=400)
+    quote = fmp_client._fetch_one_quote(symbol)
+    if quote:
+        return JsonResponse({
+            "symbol": quote.get("symbol", symbol),
+            "price": quote.get("price"),
+            "name": quote.get("name", ""),
+        })
+    return JsonResponse({"error": "not found"}, status=404)
+
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 

@@ -11,8 +11,32 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework import status
 
-from .models import AdminWallet, Transaction, PaymentMethod, Notification
+from decimal import Decimal
+from .models import AdminWallet, Transaction, PaymentMethod, Notification, Stock
 from .email_service import send_admin_payment_intent_notification
+
+# Maps the base currency code of an AdminWallet to its FMP Stock symbol
+_CRYPTO_TO_STOCK = {
+    'BTC': 'BTCUSD', 'ETH': 'ETHUSD', 'SOL': 'SOLUSD',
+    'BNB': 'BNBUSD', 'XRP': 'XRPUSD', 'LTC': 'LTCUSD',
+    'DOGE': 'DOGEUSD', 'ADA': 'ADAUSD', 'AVAX': 'AVAXUSD',
+    'LINK': 'LINKUSD',
+}
+_STABLECOINS = {'USDT', 'USDC', 'DAI', 'BUSD'}
+
+
+def _live_rate(currency_code):
+    """Return live USD-per-unit rate from the Stock table, or None if not available."""
+    base = currency_code.split()[0]
+    if base in _STABLECOINS:
+        return Decimal('1.000000')
+    sym = _CRYPTO_TO_STOCK.get(base)
+    if sym:
+        try:
+            return Stock.objects.get(symbol=sym).price
+        except Stock.DoesNotExist:
+            pass
+    return None
 
 
 # ============================================================
@@ -72,11 +96,13 @@ def get_deposit_options(request):
             except Exception:
                 qr_code_url = None
 
+        rate = _live_rate(w.currency)
         wallet_list.append({
             "id": w.id,
             "currency": w.currency,
             "currency_display": w.get_currency_display(),
-            "amount": str(w.amount),
+            "amount": str(rate) if rate is not None else str(w.amount),
+            "rate_is_live": rate is not None,
             "wallet_address": w.wallet_address,
             "qr_code_url": qr_code_url,
             "is_active": w.is_active,

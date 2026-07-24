@@ -294,7 +294,7 @@ def get_withdrawal_methods(request):
     for m in methods:
         # Determine address based on method type
         address = ""
-        if m.method_type in ("ETH", "BTC", "SOL", "USDT_ERC20", "USDT_TRC20"):
+        if m.method_type in ("ETH", "BTC", "SOL", "USDT_ERC20", "USDT_TRC20", "USDC_BASE", "USDC_SOL"):
             address = m.address or ""
         elif m.method_type == "BANK":
             address = m.bank_account_number or ""

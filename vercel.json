@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "kovetrade/wsgi.py",
+      "src": "covetrade/wsgi.py",
       "use": "@vercel/python",
       "config": {
         "maxLambdaSize": "15mb",
@@ -14,11 +14,11 @@
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "kovetrade/wsgi.py"
+      "dest": "covetrade/wsgi.py"
     }
   ],
   "env": {
-    "DJANGO_SETTINGS_MODULE": "kovetrade.settings",
+    "DJANGO_SETTINGS_MODULE": "covetrade.settings",
     "PYTHONUNBUFFERED": "1"
   }
 }

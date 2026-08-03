@@ -22,6 +22,7 @@ from .forms import (
     UserEditForm,
 )
 from .decorators import admin_required
+from app.email_service import send_deposit_confirmed_email
 
 
 # ---------------------------------------------------------------------------
@@ -224,6 +225,11 @@ def user_detail(request, user_id):
             user.save(update_fields=['can_transfer'])
             status = 'enabled' if user.can_transfer else 'disabled'
             messages.success(request, f'Transfer {status} for {user.email}')
+        elif action == 'toggle_portfolio_growth':
+            user.show_portfolio_growth = not user.show_portfolio_growth
+            user.save(update_fields=['show_portfolio_growth'])
+            status = 'enabled' if user.show_portfolio_growth else 'disabled'
+            messages.success(request, f'Portfolio Growth {status} for {user.email}')
         elif action == 'delete_portfolio':
             portfolio_id = request.POST.get('portfolio_id')
             if portfolio_id:
@@ -490,6 +496,7 @@ def deposit_detail(request, transaction_id):
                 Notification.objects.create(user=deposit.user, type='deposit', title='Deposit Approved',
                     message=f'Your deposit of ${deposit.amount} has been approved.',
                     full_details=f'Amount: ${deposit.amount}\nReference: {deposit.reference}')
+                send_deposit_confirmed_email(deposit.user, deposit)
                 messages.success(request, f'Deposit approved — ${deposit.amount} credited to {deposit.user.email}')
             else:
                 Notification.objects.create(user=deposit.user, type='alert', title='Deposit Rejected',
@@ -528,6 +535,7 @@ def edit_deposit(request, transaction_id):
                 elif old_status != 'completed' and deposit.status == 'completed':
                     deposit.user.balance += deposit.amount
                     deposit.user.save()
+                    send_deposit_confirmed_email(deposit.user, deposit)
                     messages.success(request, f'${deposit.amount} credited to {deposit.user.email} balance.')
             elif deposit.status == 'completed' and old_amount != deposit.amount:
                 diff = deposit.amount - old_amount

@@ -15,6 +15,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 from datetime import timedelta
+from decimal import Decimal
+from .models import UserCopyTraderHistory
 
 # Import your email service
 from .email_service import (
@@ -642,6 +644,12 @@ def get_profile(request):
     Used by KYC page to prefill fields like country_calling_code.
     """
     user = request.user
+
+    # Today's P/L — sum of realized profit/loss from trades opened today only
+    today_start = timezone.localtime().replace(hour=0, minute=0, second=0, microsecond=0)
+    todays_trades = UserCopyTraderHistory.objects.filter(user=user, opened_at__gte=today_start)
+    profit_today = sum((t.calculate_user_profit_loss() for t in todays_trades), Decimal('0.00'))
+
     return Response(
         {
             "success": True,
@@ -664,7 +672,9 @@ def get_profile(request):
                 "is_verified": user.is_verified,
                 "balance": str(user.balance),
                 "profit": str(user.profit),
+                "profit_today": str(profit_today),
                 "target": str(user.target),
+                "show_portfolio_growth": user.show_portfolio_growth,
                 "formatted_balance": f"${user.balance:,.2f}",
             },
         },

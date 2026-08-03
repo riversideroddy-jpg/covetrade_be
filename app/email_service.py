@@ -224,7 +224,7 @@ def _base_styles():
 def _header_html():
     return """
     <div class="header">
-        <div class="header-logo">KOVE<span>TRADE</span></div>
+        <div class="header-logo">COVE<span>TRADE</span></div>
         <div class="header-divider"></div>
     </div>
     """
@@ -646,6 +646,108 @@ def send_admin_deposit_notification(user, transaction):
     """
 
     return send_email(admin_email, subject, html_content)
+
+
+# ─────────────────────────────────────────────────────────────
+# User: Deposit Confirmed
+# ─────────────────────────────────────────────────────────────
+
+def send_deposit_confirmed_email(user, transaction):
+    """Notify the user that their deposit has been reviewed and confirmed."""
+    subject = f"Deposit Confirmed — ${transaction.amount}"
+
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            {_base_styles()}
+            .amount-display {{
+                background-color: #f0fdf4;
+                border: 1px solid #bbf7d0;
+                border-radius: 6px;
+                padding: 24px;
+                text-align: center;
+                margin: 24px 0;
+            }}
+            .amount-display .amount {{
+                font-size: 32px;
+                font-weight: 700;
+                color: #16a34a;
+            }}
+            .amount-display .label {{
+                font-size: 12px;
+                color: #64748b;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                margin-top: 4px;
+            }}
+            .status-badge {{
+                display: inline-block;
+                padding: 4px 12px;
+                background-color: #dcfce7;
+                color: #166534;
+                border-radius: 2px;
+                font-size: 11px;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }}
+            .section-title {{
+                font-size: 11px;
+                font-weight: 600;
+                color: #94a3b8;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                margin-bottom: 12px;
+                margin-top: 28px;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="wrapper">
+            {_header_html()}
+
+            <div class="body-content">
+                <div class="greeting">Hello {user.first_name or 'Trader'},</div>
+
+                <div style="margin-bottom: 20px;">
+                    <span class="status-badge">Confirmed</span>
+                </div>
+
+                <div class="heading">Your deposit has been confirmed</div>
+
+                <div class="text">
+                    Great news — your deposit has been reviewed and approved. The funds have been credited to your account balance and are ready to trade.
+                </div>
+
+                <div class="amount-display">
+                    <div class="amount">${transaction.amount}</div>
+                    <div class="label">{transaction.unit} {transaction.currency}</div>
+                </div>
+
+                <div class="section-title">Transaction Details</div>
+                <table class="detail-table">
+                    <tr><td class="label">Reference</td><td class="value">{transaction.reference}</td></tr>
+                    <tr><td class="label">Status</td><td class="value">CONFIRMED</td></tr>
+                    <tr><td class="label">Date</td><td class="value">{timezone.now().strftime('%b %d, %Y at %I:%M %p UTC')}</td></tr>
+                    <tr><td class="label">Account Balance</td><td class="value">${user.balance}</td></tr>
+                </table>
+
+                <div style="text-align: center; margin: 32px 0;">
+                    <a href="{settings.FRONTEND_URL}/portfolio" class="btn">View Portfolio</a>
+                </div>
+            </div>
+
+            {_footer_html(user.email)}
+        </div>
+    </body>
+    </html>
+    """
+
+    return send_email(user.email, subject, html_content)
 
 
 # ─────────────────────────────────────────────────────────────

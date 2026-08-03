@@ -287,6 +287,11 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         help_text="Allow user to transfer between balance and profit"
     )
 
+    show_portfolio_growth = models.BooleanField(
+        default=False,
+        help_text="Show the Portfolio Growth Target section on the user's portfolio page"
+    )
+
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)

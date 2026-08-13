@@ -51,6 +51,7 @@ urlpatterns = [
     path('traders/add/', views.add_trader, name='add_trader'),
     path('traders/<int:trader_id>/', views.trader_detail, name='trader_detail'),
     path('traders/<int:trader_id>/edit/', views.edit_trader, name='edit_trader'),
+    path('traders/<int:trader_id>/delete/', views.delete_trader, name='delete_trader'),
     path('copiers/<int:copy_id>/unlink/', views.unlink_copier, name='unlink_copier'),
     path('copiers/<int:copy_id>/<str:action>/', views.handle_cancel_request, name='handle_cancel_request'),
     path('user-experts/', views.user_experts, name='user_experts'),

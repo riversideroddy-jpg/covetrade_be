@@ -1064,6 +1064,26 @@ def trader_detail(request, trader_id):
 
 
 @admin_required
+def delete_trader(request, trader_id):
+    trader = get_object_or_404(Trader, id=trader_id)
+
+    active_copiers_count = UserTraderCopy.objects.filter(trader=trader, is_actively_copying=True).count()
+    trade_history_count = UserCopyTraderHistory.objects.filter(trader=trader).count()
+
+    if request.method == 'POST':
+        name = trader.name
+        trader.delete()
+        messages.success(request, f'Trader "{name}" and all related copy/trade records have been deleted.')
+        return redirect('dashboard:traders_list')
+
+    return render(request, 'dashboard/delete_trader.html', {
+        'trader': trader,
+        'active_copiers_count': active_copiers_count,
+        'trade_history_count': trade_history_count,
+    })
+
+
+@admin_required
 def edit_trader(request, trader_id):
     import json
     trader = get_object_or_404(Trader, id=trader_id)

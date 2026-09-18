@@ -46,6 +46,7 @@ EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='your-email@gmail.com')  # Y
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='your-app-password')  # Email App Password
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='CoveTrade <support@covetrades.com>')
 ADMIN_NOTIFICATION_EMAIL = config('ADMIN_NOTIFICATION_EMAIL', default='support@covetrades.com')
+RESEND_API_KEY = config('RESEND_API_KEY', default='')
 
 
 FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')
